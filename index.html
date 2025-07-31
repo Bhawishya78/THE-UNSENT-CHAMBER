@@ -1,57 +1,67 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>The Unsent Chamber - Lock Screen</title>
+  <title>The Unsent Chamber - Lock</title>
   <style>
     body {
-      background-color: #000;
-      color: #0f0;
-      font-family: 'Courier New', monospace;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      margin: 0;
       height: 100vh;
-      flex-direction: column;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Arial', sans-serif;
+      color: #fff;
+    }
+    .container {
+      text-align: center;
+    }
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 30px;
+      letter-spacing: 2px;
     }
     input {
-      padding: 10px;
-      font-size: 16px;
+      padding: 12px;
+      width: 250px;
       border: none;
-      border-radius: 4px;
-      margin-bottom: 15px;
-      background: #111;
-      color: #0f0;
+      border-radius: 8px;
+      font-size: 1em;
+      text-align: center;
     }
     button {
-      padding: 10px 20px;
-      background-color: #0f0;
-      color: #000;
+      margin-top: 15px;
+      padding: 10px 25px;
+      font-size: 1em;
       border: none;
-      font-weight: bold;
-      border-radius: 4px;
+      border-radius: 6px;
+      background-color: #00ffee;
       cursor: pointer;
     }
     button:hover {
-      background-color: #0a0;
+      background-color: #00bbaa;
     }
   </style>
 </head>
 <body>
-  <h1>ðŸ”’ The Unsent Chamber</h1>
-  <input type="password" id="password" placeholder="Enter Password"/>
-  <button onclick="unlock()">Unlock</button>
+  <div class="container">
+    <h1>🔐 Enter Secret Code</h1>
+    <input id="passcode" type="password" placeholder="Enter password..." />
+    <br />
+    <button onclick="unlock()">Unlock</button>
+  </div>
+
   <script>
     function unlock() {
-      const password = document.getElementById("password").value.trim();
-      if (password === "openchamber") {
-        window.location.href = "home.html";
-      } else if (password === "theOneAboveAll") {
-        window.location.href = "admin.html";
+      const code = document.getElementById("passcode").value;
+      const validPassword = "enter"; // 🧠 Change this if needed
+
+      if (code === validPassword) {
+        window.location.href = "homepage.html";
       } else {
-        alert("ðŸš« Incorrect password. Try again.");
+        alert("❌ Wrong passcode!");
       }
     }
   </script>
