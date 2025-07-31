@@ -1,12 +1,101 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Panel</title>
+  <title>Admin Panel - The Unsent Chamber</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #121212;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .message {
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px auto;
+      max-width: 600px;
+      word-wrap: break-word;
+    }
+    .message strong {
+      color: #ff4081;
+      font-size: 18px;
+    }
+    .message p {
+      font-size: 16px;
+    }
+    .delete-btn {
+      background: #ff1744;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
 </head>
-<body style="background:black; color:red; text-align:center; font-family:sans-serif;">
-  <h1>ðŸ”¥ Admin Panel ðŸ”¥</h1>
-  <p>Welcome, Admin. Manage all the unsent messages here.</p>
+<body>
+
+  <h1>🛡️ Admin Panel</h1>
+  <div id="messagesContainer"></div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuM4PFCIYBSA75MEiQgxmky77ml5hIuOM",
+      authDomain: "the-unsent-chamber.firebaseapp.com",
+      databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
+      projectId: "the-unsent-chamber",
+      storageBucket: "the-unsent-chamber.firebasestorage.app",
+      messagingSenderId: "693365297092",
+      appId: "1:693365297092:web:0df5991809ef021a801e91",
+      measurementId: "G-HK5P4LB86C"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase();
+    const messagesRef = ref(db, 'unsent');
+    const container = document.getElementById('messagesContainer');
+
+    onValue(messagesRef, (snapshot) => {
+      container.innerHTML = '';
+      const data = snapshot.val();
+
+      if (!data) {
+        container.innerHTML = '<p>No messages found.</p>';
+        return;
+      }
+
+      Object.entries(data).forEach(([id, msg]) => {
+        const div = document.createElement('div');
+        div.className = 'message';
+        div.style.background = msg.color || '#333';
+        div.innerHTML = `
+          <strong>${msg.name}</strong>
+          <p>${msg.message}</p>
+          <button class="delete-btn" onclick="deleteMessage('${id}')">Delete</button>
+        `;
+        container.appendChild(div);
+      });
+    });
+
+    window.deleteMessage = async function (id) {
+      if (confirm("Are you sure you want to delete this message?")) {
+        await remove(ref(db, `unsent/${id}`));
+      }
+    };
+  </script>
+
 </body>
 </html>
+
