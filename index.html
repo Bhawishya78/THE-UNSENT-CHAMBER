@@ -3,67 +3,220 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>The Unsent Chamber - Lock</title>
+  <title>The Unsent Chamber</title>
   <style>
     body {
       margin: 0;
-      height: 100vh;
-      background: #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       font-family: 'Arial', sans-serif;
+      background: #000;
       color: #fff;
+      overflow: hidden;
     }
-    .container {
-      text-align: center;
+    .screen {
+      display: none;
+      padding: 20px;
     }
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 30px;
-      letter-spacing: 2px;
+    #lockScreen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #111;
+      flex-direction: column;
     }
-    input {
-      padding: 12px;
-      width: 250px;
-      border: none;
+    input, select {
+      padding: 10px;
+      margin: 10px;
+    }
+    .fireflies {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      background: black;
+      overflow: hidden;
+    }
+    .firefly {
+      position: absolute;
+      border-radius: 50%;
+      background: yellow;
+      width: 5px;
+      height: 5px;
+      animation: fly 10s infinite;
+    }
+    @keyframes fly {
+      0% {transform: translate(0, 0);}
+      50% {transform: translate(100px, 100px);}
+      100% {transform: translate(0, 0);}
+    }
+    .msg-box {
+      padding: 10px;
+      margin: 10px 0;
       border-radius: 8px;
-      font-size: 1em;
-      text-align: center;
-    }
-    button {
-      margin-top: 15px;
-      padding: 10px 25px;
-      font-size: 1em;
-      border: none;
-      border-radius: 6px;
-      background-color: #00ffee;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #00bbaa;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🔐 Enter Secret Code</h1>
-    <input id="passcode" type="password" placeholder="Enter password..." />
-    <br />
-    <button onclick="unlock()">Unlock</button>
-  </div>
 
-  <script>
-    function unlock() {
-      const code = document.getElementById("passcode").value;
-      const validPassword = "enter"; // 🧠 Change this if needed
+<div id="lockScreen" class="screen" style="display: flex;">
+  <h2>Enter Access Key</h2>
+  <input id="accessInput" placeholder="Enter password"/>
+  <button onclick="unlock()">Unlock</button>
+</div>
 
-      if (code === validPassword) {
-        window.location.href = "homepage.html";
-      } else {
-        alert("❌ Wrong passcode!");
-      }
+<div id="homeScreen" class="screen">
+  <div class="fireflies" id="fireflyBg"></div>
+  <h1>Welcome to The Unsent Chamber</h1>
+  <p id="jokeDisplay">Click below to hear a fun joke!</p>
+  <button onclick="getJoke()">Tell me a joke</button><br><br>
+  <button onclick="showScreen('postScreen')">Write a Message</button>
+  <button onclick="showScreen('searchScreen')">Search Messages</button>
+</div>
+
+<div id="postScreen" class="screen">
+  <h2>Write Your Message</h2>
+  <textarea id="messageInput" rows="4" cols="50" placeholder="Type your message..."></textarea><br>
+  <label>Choose color:</label>
+  <select id="colorPicker">
+    <option value="#ff9999">Pink</option>
+    <option value="#99ccff">Blue</option>
+    <option value="#ccffcc">Green</option>
+    <option value="#ffffcc">Yellow</option>
+  </select><br>
+  <input type="text" id="msgKey" placeholder="Set a keyword"/><br>
+  <button onclick="submitMessage()">Submit</button>
+  <button onclick="showScreen('homeScreen')">Back</button>
+</div>
+
+<div id="searchScreen" class="screen">
+  <h2>Search Message</h2>
+  <input id="searchKey" placeholder="Enter keyword"/>
+  <button onclick="searchMessage()">Search</button><br><br>
+  <div id="resultBox"></div>
+  <button onclick="showScreen('homeScreen')">Back</button>
+</div>
+
+<div id="adminScreen" class="screen">
+  <h2>Admin Panel</h2>
+  <p>All messages:</p>
+  <div id="adminResults"></div>
+  <button onclick="showScreen('homeScreen')">Back</button>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDuM4PFCIYBSA75MEiQgxmky77ml5hIuOM",
+    authDomain: "the-unsent-chamber.firebaseapp.com",
+    databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
+    projectId: "the-unsent-chamber",
+    storageBucket: "the-unsent-chamber.firebasestorage.app",
+    messagingSenderId: "693365297092",
+    appId: "1:693365297092:web:0df5991809ef021a801e91",
+    measurementId: "G-HK5P4LB86C"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const unlock = () => {
+    const input = document.getElementById("accessInput").value;
+    if (input === "admin@321") {
+      showScreen("adminScreen");
+      fetchAllMessages();
+    } else if (input === "open@123") {
+      showScreen("homeScreen");
+      spawnFireflies();
+    } else {
+      alert("Wrong password!");
     }
-  </script>
+  };
+
+  function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(el => el.style.display = "none");
+    document.getElementById(id).style.display = "block";
+  }
+
+  function submitMessage() {
+    const msg = document.getElementById("messageInput").value;
+    const color = document.getElementById("colorPicker").value;
+    const key = document.getElementById("msgKey").value.toLowerCase();
+
+    if (!msg || !key) return alert("Fill all fields!");
+
+    set(ref(db, 'messages/' + key), {
+      text: msg,
+      color: color
+    }).then(() => {
+      confetti();
+      alert("Message sent!");
+      document.getElementById("messageInput").value = "";
+      document.getElementById("msgKey").value = "";
+    });
+  }
+
+  function searchMessage() {
+    const key = document.getElementById("searchKey").value.toLowerCase();
+    const result = document.getElementById("resultBox");
+
+    get(child(ref(db), 'messages/' + key)).then(snapshot => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        result.innerHTML = `<div class="msg-box" style="background:${data.color}">${data.text}</div>`;
+      } else {
+        result.innerHTML = "No message found.";
+      }
+    });
+  }
+
+  function fetchAllMessages() {
+    const out = document.getElementById("adminResults");
+    get(child(ref(db), 'messages')).then(snapshot => {
+      if (snapshot.exists()) {
+        out.innerHTML = '';
+        const data = snapshot.val();
+        Object.keys(data).forEach(k => {
+          out.innerHTML += `<div style="background:${data[k].color}; margin:10px; padding:10px;">[${k}] → ${data[k].text}</div>`;
+        });
+      }
+    });
+  }
+
+  function getJoke() {
+    const jokes = [
+      "Why did the web developer go broke? Because he used up all his cache!",
+      "Why don’t skeletons fight each other? They don’t have the guts.",
+      "Parallel lines have so much in common. Too bad they'll never meet."
+    ];
+    document.getElementById("jokeDisplay").innerText = jokes[Math.floor(Math.random() * jokes.length)];
+  }
+
+  function confetti() {
+    const duration = 1 * 1000;
+    const end = Date.now() + duration;
+
+    (function frame() {
+      // Just a simple alert for visual cue. You can add a real confetti library here.
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    })();
+  }
+
+  function spawnFireflies() {
+    const container = document.getElementById("fireflyBg");
+    for (let i = 0; i < 30; i++) {
+      let dot = document.createElement("div");
+      dot.className = "firefly";
+      dot.style.top = Math.random() * 100 + "vh";
+      dot.style.left = Math.random() * 100 + "vw";
+      container.appendChild(dot);
+    }
+  }
+</script>
+
 </body>
 </html>
