@@ -1,221 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Unsent Chamber</title>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap" rel="stylesheet">
+  <script type="module">
+    // Firebase Config
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "the-unsent-chamber.firebaseapp.com",
+      databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
+      projectId: "the-unsent-chamber",
+      storageBucket: "the-unsent-chamber.firebasestorage.app",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "YOUR_MEASUREMENT_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const messagesRef = ref(db, 'messages');
+
+    // Send Message
+    window.sendMessage = function() {
+      const name = document.getElementById("name").value.trim();
+      const message = document.getElementById("message").value.trim();
+      const color = document.getElementById("color").value;
+      const password = document.getElementById("password").value;
+
+      if (password === 'admin@unsent') {
+        alert('Admin Panel Accessed!');
+        window.location.href = '/admin.html';
+        return;
+      }
+
+      if (name && message) {
+        push(messagesRef, { name, message, color });
+        document.getElementById("messageForm").reset();
+        confetti();
+      }
+    }
+
+    // Search Messages
+    window.searchMessage = function() {
+      const searchName = document.getElementById("search").value.trim().toLowerCase();
+      onValue(messagesRef, (snapshot) => {
+        const messages = snapshot.val();
+        const result = document.getElementById("result");
+        result.innerHTML = "";
+
+        for (let key in messages) {
+          if (messages[key].name.toLowerCase() === searchName) {
+            const div = document.createElement("div");
+            div.textContent = messages[key].message;
+            div.style.backgroundColor = messages[key].color || "#333";
+            div.style.padding = "10px";
+            div.style.borderRadius = "10px";
+            div.style.margin = "10px 0";
+            result.appendChild(div);
+          }
+        }
+      });
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
   <style>
     body {
-      font-family: 'Courier Prime', monospace;
       margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
       background: black;
       color: white;
       overflow-x: hidden;
     }
-    canvas { position: fixed; top: 0; left: 0; z-index: -1; }
-
     h1 {
       text-align: center;
-      margin-top: 30px;
-      font-size: 2.5rem;
     }
-
-    #joke {
-      text-align: center;
-      font-size: 1rem;
-      opacity: 0.7;
-      margin-top: -10px;
+    .fireflies {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background-image: radial-gradient(white 1px, transparent 1px);
+      background-size: 5px 5px;
+      animation: twinkle 10s infinite alternate;
     }
-
+    @keyframes twinkle {
+      from { opacity: 0.3; }
+      to { opacity: 0.8; }
+    }
     .container {
-      text-align: center;
-      margin-top: 50px;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
     }
-
     input, textarea, select {
+      width: 100%;
+      margin: 10px 0;
       padding: 10px;
-      margin: 10px;
-      border: none;
       border-radius: 5px;
-      width: 60%;
+      border: none;
     }
-
-    #colorPicker {
-      width: 80px;
-    }
-
     button {
       padding: 10px 20px;
-      background-color: #555;
-      color: white;
+      background: white;
+      color: black;
       border: none;
-      border-radius: 5px;
       cursor: pointer;
+      border-radius: 5px;
     }
-
-    .message {
-      border-radius: 10px;
-      padding: 15px;
-      margin: 15px auto;
-      width: 60%;
-      font-size: 1rem;
-    }
-
-    #adminPanel {
-      display: none;
-      padding: 20px;
-      border-top: 2px solid white;
-    }
-
-    #adminBtn {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      font-size: 0.7rem;
-      opacity: 0.3;
+    .joke-box {
+      margin-top: 20px;
+      font-style: italic;
+      text-align: center;
     }
   </style>
 </head>
 <body>
+  <div class="fireflies"></div>
+  <h1>The Unsent Chamber</h1>
+  <div class="container">
+    <form id="messageForm" onsubmit="event.preventDefault(); sendMessage();">
+      <input type="text" id="name" placeholder="Your Name" required />
+      <textarea id="message" placeholder="Type your unsent message..." required></textarea>
+      <select id="color">
+        <option value="#ffadad">Pink</option>
+        <option value="#ffd6a5">Orange</option>
+        <option value="#fdffb6">Yellow</option>
+        <option value="#caffbf">Green</option>
+        <option value="#9bf6ff">Blue</option>
+        <option value="#a0c4ff">Indigo</option>
+        <option value="#bdb2ff">Purple</option>
+      </select>
+      <input type="password" id="password" placeholder="(Optional) Admin Password" />
+      <button type="submit">Send</button>
+    </form>
 
-<canvas id="bg"></canvas>
+    <input type="text" id="search" placeholder="Search by name..." />
+    <button onclick="searchMessage()">Search</button>
 
-<h1>The Unsent Chamber</h1>
-<div id="joke">Loading fun thought...</div>
+    <div id="result"></div>
+    <div class="joke-box" id="jokeBox">Loading a joke...</div>
+  </div>
 
-<div class="container">
-  <textarea id="message" rows="4" placeholder="Type your unsent message..."></textarea><br>
-  <input id="code" type="text" placeholder="Search code / your key" /><br>
-  <input type="color" id="colorPicker" value="#ffffff" /><br>
-  <button onclick="sendMessage()">Send</button>
-  <button onclick="searchMessage()">Search</button>
-</div>
-
-<div id="results"></div>
-
-<!-- Hidden Admin Access -->
-<input type="password" id="adminPass" placeholder="Enter admin password" style="opacity:0; position:absolute; top:0; left:-999px;" />
-<div id="adminPanel">
-  <h3>Admin Panel</h3>
-  <div id="adminMessages"></div>
-</div>
-<button id="adminBtn" onclick="revealAdmin()">.</button>
-
-<!-- Confetti CDN -->
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-
-<!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDuM4PFCIYBSA75MEiQgxmky77ml5hIuOM",
-    authDomain: "the-unsent-chamber.firebaseapp.com",
-    databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
-    projectId: "the-unsent-chamber",
-    storageBucket: "the-unsent-chamber.firebasestorage.app",
-    messagingSenderId: "693365297092",
-    appId: "1:693365297092:web:0df5991809ef021a801e91",
-    measurementId: "G-HK5P4LB86C"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  function sendMessage() {
-    const msg = document.getElementById("message").value;
-    const code = document.getElementById("code").value;
-    const color = document.getElementById("colorPicker").value;
-    if (!msg || !code) return alert("Please enter message and code.");
-    
-    set(ref(db, "unsent/" + code), {
-      text: msg,
-      color: color,
-      timestamp: Date.now()
-    }).then(() => {
-      document.getElementById("message").value = "";
-      confetti();
-      alert("Message sent!");
-    });
-  }
-
-  function searchMessage() {
-    const code = document.getElementById("code").value;
-    if (!code) return alert("Enter search code.");
-    get(child(ref(db), "unsent/" + code)).then((snap) => {
-      if (snap.exists()) {
-        const data = snap.val();
-        document.getElementById("results").innerHTML = `<div class="message" style="background:${data.color}; color:black;">${data.text}</div>`;
-      } else {
-        alert("Message not found.");
-      }
-    });
-  }
-
-  function revealAdmin() {
-    const pass = prompt("Enter admin password:");
-    if (pass === "admin-access-666") {
-      document.getElementById("adminPanel").style.display = "block";
-      get(child(ref(db), "unsent")).then((snap) => {
-        let html = '';
-        snap.forEach(child => {
-          const d = child.val();
-          html += `<div class="message" style="background:${d.color}; color:black;"><b>${child.key}</b>: ${d.text}</div>`;
-        });
-        document.getElementById("adminMessages").innerHTML = html;
+  <script>
+    fetch('https://official-joke-api.appspot.com/random_joke')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('jokeBox').textContent = `${data.setup} - ${data.punchline}`;
+      })
+      .catch(() => {
+        document.getElementById('jokeBox').textContent = "Couldn't load a joke. Try again later.";
       });
-    } else {
-      alert("Wrong password!");
-    }
-  }
-
-  // Fireflies BG
-  const canvas = document.getElementById("bg");
-  const ctx = canvas.getContext("2d");
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const fireflies = [];
-  for (let i = 0; i < 50; i++) {
-    fireflies.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 2 + 1,
-      d: Math.random() * 1
-    });
-  }
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < fireflies.length; i++) {
-      let f = fireflies[i];
-      ctx.beginPath();
-      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, false);
-      ctx.fillStyle = "rgba(255,255,100,0.8)";
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = "yellow";
-      ctx.fill();
-      f.x += Math.sin(i) * 0.5;
-      f.y += Math.cos(i) * 0.5;
-      if (f.x < 0 || f.x > canvas.width || f.y < 0 || f.y > canvas.height) {
-        f.x = Math.random() * canvas.width;
-        f.y = Math.random() * canvas.height;
-      }
-    }
-    requestAnimationFrame(animate);
-  }
-  animate();
-
-  // Jokes
-  const jokes = [
-    "404: Joke not found!",
-    "Why did the coder get stuck in the shower? He kept reading the shampoo instructions: Lather, Rinse, Repeat.",
-    "I told my computer I needed a break… now it won’t stop sending me KitKats.",
-    "There are 10 types of people: Those who understand binary and those who don’t.",
-    "Debugging: Being the detective in a crime movie where you’re also the murderer."
-  ];
-  document.getElementById("joke").innerText = jokes[Math.floor(Math.random() * jokes.length)];
-</script>
+  </script>
 </body>
 </html>
