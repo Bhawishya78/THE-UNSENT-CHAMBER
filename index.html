@@ -1,159 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Unsent Chamber</title>
-  <script type="module">
-    // Firebase Config
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "the-unsent-chamber.firebaseapp.com",
-      databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
-      projectId: "the-unsent-chamber",
-      storageBucket: "the-unsent-chamber.firebasestorage.app",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID",
-      measurementId: "YOUR_MEASUREMENT_ID"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const messagesRef = ref(db, 'messages');
-
-    // Send Message
-    window.sendMessage = function() {
-      const name = document.getElementById("name").value.trim();
-      const message = document.getElementById("message").value.trim();
-      const color = document.getElementById("color").value;
-      const password = document.getElementById("password").value;
-
-      if (password === 'admin@unsent') {
-        alert('Admin Panel Accessed!');
-        window.location.href = '/admin.html';
-        return;
-      }
-
-      if (name && message) {
-        push(messagesRef, { name, message, color });
-        document.getElementById("messageForm").reset();
-        confetti();
-      }
-    }
-
-    // Search Messages
-    window.searchMessage = function() {
-      const searchName = document.getElementById("search").value.trim().toLowerCase();
-      onValue(messagesRef, (snapshot) => {
-        const messages = snapshot.val();
-        const result = document.getElementById("result");
-        result.innerHTML = "";
-
-        for (let key in messages) {
-          if (messages[key].name.toLowerCase() === searchName) {
-            const div = document.createElement("div");
-            div.textContent = messages[key].message;
-            div.style.backgroundColor = messages[key].color || "#333";
-            div.style.padding = "10px";
-            div.style.borderRadius = "10px";
-            div.style.margin = "10px 0";
-            result.appendChild(div);
-          }
-        }
-      });
-    }
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: black;
-      color: white;
-      overflow-x: hidden;
+      background: #000;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-    h1 {
-      text-align: center;
-    }
-    .fireflies {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      background-image: radial-gradient(white 1px, transparent 1px);
-      background-size: 5px 5px;
-      animation: twinkle 10s infinite alternate;
-    }
-    @keyframes twinkle {
-      from { opacity: 0.3; }
-      to { opacity: 0.8; }
-    }
-    .container {
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-    }
-    input, textarea, select {
-      width: 100%;
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
+    #passwordScreen, #homeScreen, #postScreen, #searchScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
     }
     button {
       padding: 10px 20px;
-      background: white;
-      color: black;
+      background: #444;
+      color: #fff;
       border: none;
-      cursor: pointer;
       border-radius: 5px;
+      cursor: pointer;
     }
-    .joke-box {
-      margin-top: 20px;
-      font-style: italic;
-      text-align: center;
+    input, textarea {
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      width: 80vw;
+      max-width: 400px;
+      background: #111;
+      color: white;
+    }
+    textarea {
+      resize: none;
+    }
+    #searchResults {
+      max-width: 400px;
+      text-align: left;
+      overflow-y: auto;
+      max-height: 300px;
     }
   </style>
 </head>
 <body>
-  <div class="fireflies"></div>
-  <h1>The Unsent Chamber</h1>
-  <div class="container">
-    <form id="messageForm" onsubmit="event.preventDefault(); sendMessage();">
-      <input type="text" id="name" placeholder="Your Name" required />
-      <textarea id="message" placeholder="Type your unsent message..." required></textarea>
-      <select id="color">
-        <option value="#ffadad">Pink</option>
-        <option value="#ffd6a5">Orange</option>
-        <option value="#fdffb6">Yellow</option>
-        <option value="#caffbf">Green</option>
-        <option value="#9bf6ff">Blue</option>
-        <option value="#a0c4ff">Indigo</option>
-        <option value="#bdb2ff">Purple</option>
-      </select>
-      <input type="password" id="password" placeholder="(Optional) Admin Password" />
-      <button type="submit">Send</button>
-    </form>
 
-    <input type="text" id="search" placeholder="Search by name..." />
-    <button onclick="searchMessage()">Search</button>
-
-    <div id="result"></div>
-    <div class="joke-box" id="jokeBox">Loading a joke...</div>
+  <div id="passwordScreen">
+    <h2>Enter Password</h2>
+    <input type="password" id="passwordInput" placeholder="Password" />
+    <button onclick="checkPassword()">Enter</button>
   </div>
 
+  <div id="homeScreen">
+    <h1>The Unsent Chamber</h1>
+    <button onclick="showPostScreen()">Post</button>
+    <button onclick="showSearchScreen()">Search</button>
+  </div>
+
+  <div id="postScreen">
+    <h2>Send a Message</h2>
+    <input type="text" id="postName" placeholder="To (Name)" />
+    <textarea id="postMessage" placeholder="Your Message" rows="5"></textarea>
+    <button onclick="submitPost()">Send</button>
+    <button onclick="goHome()">Back</button>
+  </div>
+
+  <div id="searchScreen">
+    <h2>Search Messages</h2>
+    <input type="text" id="searchInput" placeholder="Enter name" />
+    <button onclick="searchMessages()">Search</button>
+    <div id="searchResults"></div>
+    <button onclick="goHome()">Back</button>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
+
   <script>
-    fetch('https://official-joke-api.appspot.com/random_joke')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('jokeBox').textContent = `${data.setup} - ${data.punchline}`;
-      })
-      .catch(() => {
-        document.getElementById('jokeBox').textContent = "Couldn't load a joke. Try again later.";
-      });
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuM4PFCIYBSA75MEiQgxmky77ml5hIuOM",
+      authDomain: "the-unsent-chamber.firebaseapp.com",
+      databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
+      projectId: "the-unsent-chamber",
+      storageBucket: "the-unsent-chamber.firebasestorage.app",
+      messagingSenderId: "693365297092",
+      appId: "1:693365297092:web:0df5991809ef021a801e91",
+      measurementId: "G-HK5P4LB86C"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const CORRECT_PASSWORD = "unsent";
+
+    window.onload = () => {
+      document.getElementById("passwordScreen").style.display = "flex";
+    };
+
+    function checkPassword() {
+      const entered = document.getElementById("passwordInput").value;
+      if (entered === CORRECT_PASSWORD) {
+        document.getElementById("passwordScreen").style.display = "none";
+        document.getElementById("homeScreen").style.display = "flex";
+      } else {
+        alert("Wrong password");
+      }
+    }
+
+    function goHome() {
+      hideAllScreens();
+      document.getElementById("homeScreen").style.display = "flex";
+    }
+
+    function showPostScreen() {
+      hideAllScreens();
+      document.getElementById("postScreen").style.display = "flex";
+    }
+
+    function showSearchScreen() {
+      hideAllScreens();
+      document.getElementById("searchScreen").style.display = "flex";
+    }
+
+    function hideAllScreens() {
+      document.getElementById("homeScreen").style.display = "none";
+      document.getElementById("postScreen").style.display = "none";
+      document.getElementById("searchScreen").style.display = "none";
+    }
+
+    async function submitPost() {
+      const name = document.getElementById("postName").value.trim();
+      const msg = document.getElementById("postMessage").value.trim();
+      if (!name || !msg) return alert("Fill both fields");
+
+      const messageData = {
+        name: name.toLowerCase(),
+        message: msg,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        await database.ref("unsentMessages").push(messageData);
+        alert("Message sent");
+        document.getElementById("postName").value = "";
+        document.getElementById("postMessage").value = "";
+        goHome();
+      } catch (error) {
+        console.error(error);
+        alert("Failed to send");
+      }
+    }
+
+    async function searchMessages() {
+      const search = document.getElementById("searchInput").value.trim().toLowerCase();
+      const results = document.getElementById("searchResults");
+      results.innerHTML = "";
+
+      try {
+        const snapshot = await database.ref("unsentMessages")
+          .orderByChild("name")
+          .equalTo(search)
+          .once("value");
+
+        if (!snapshot.exists()) {
+          results.innerHTML = "<p>No messages found.</p>";
+          return;
+        }
+
+        snapshot.forEach(child => {
+          const data = child.val();
+          const p = document.createElement("p");
+          p.textContent = data.message;
+          results.appendChild(p);
+        });
+      } catch (error) {
+        console.error(error);
+        alert("Search failed");
+      }
+    }
   </script>
 </body>
 </html>
