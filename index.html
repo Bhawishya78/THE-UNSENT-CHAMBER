@@ -2,221 +2,192 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Unsent Chamber</title>
   <style>
     body {
-      margin: 0;
-      font-family: 'Arial', sans-serif;
+      font-family: Arial, sans-serif;
       background: #000;
       color: #fff;
-      overflow: hidden;
-    }
-    .screen {
-      display: none;
-      padding: 20px;
-    }
-    #lockScreen {
+      margin: 0;
+      padding: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background: #111;
+    }
+    #passwordScreen, #homeScreen, #postScreen, #searchScreen {
+      display: none;
       flex-direction: column;
+      align-items: center;
+      gap: 20px;
     }
-    input, select {
+    button {
+      padding: 10px 20px;
+      background: #444;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    input, textarea {
       padding: 10px;
-      margin: 10px;
+      border-radius: 5px;
+      border: none;
+      width: 80vw;
+      max-width: 400px;
+      background: #111;
+      color: white;
     }
-    .fireflies {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: -1;
-      background: black;
-      overflow: hidden;
+    textarea {
+      resize: none;
     }
-    .firefly {
-      position: absolute;
-      border-radius: 50%;
-      background: yellow;
-      width: 5px;
-      height: 5px;
-      animation: fly 10s infinite;
-    }
-    @keyframes fly {
-      0% {transform: translate(0, 0);}
-      50% {transform: translate(100px, 100px);}
-      100% {transform: translate(0, 0);}
-    }
-    .msg-box {
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
+    #searchResults {
+      max-width: 400px;
+      text-align: left;
+      overflow-y: auto;
+      max-height: 300px;
     }
   </style>
 </head>
 <body>
 
-<div id="lockScreen" class="screen" style="display: flex;">
-  <h2>Enter Access Key</h2>
-  <input id="accessInput" placeholder="Enter password"/>
-  <button onclick="unlock()">Unlock</button>
-</div>
+  <div id="passwordScreen">
+    <h2>Enter Password</h2>
+    <input type="password" id="passwordInput" placeholder="Password" />
+    <button onclick="checkPassword()">Enter</button>
+  </div>
 
-<div id="homeScreen" class="screen">
-  <div class="fireflies" id="fireflyBg"></div>
-  <h1>Welcome to The Unsent Chamber</h1>
-  <p id="jokeDisplay">Click below to hear a fun joke!</p>
-  <button onclick="getJoke()">Tell me a joke</button><br><br>
-  <button onclick="showScreen('postScreen')">Write a Message</button>
-  <button onclick="showScreen('searchScreen')">Search Messages</button>
-</div>
+  <div id="homeScreen">
+    <h1>The Unsent Chamber</h1>
+    <button onclick="showPostScreen()">Post</button>
+    <button onclick="showSearchScreen()">Search</button>
+  </div>
 
-<div id="postScreen" class="screen">
-  <h2>Write Your Message</h2>
-  <textarea id="messageInput" rows="4" cols="50" placeholder="Type your message..."></textarea><br>
-  <label>Choose color:</label>
-  <select id="colorPicker">
-    <option value="#ff9999">Pink</option>
-    <option value="#99ccff">Blue</option>
-    <option value="#ccffcc">Green</option>
-    <option value="#ffffcc">Yellow</option>
-  </select><br>
-  <input type="text" id="msgKey" placeholder="Set a keyword"/><br>
-  <button onclick="submitMessage()">Submit</button>
-  <button onclick="showScreen('homeScreen')">Back</button>
-</div>
+  <div id="postScreen">
+    <h2>Send a Message</h2>
+    <input type="text" id="postName" placeholder="To (Name)" />
+    <textarea id="postMessage" placeholder="Your Message" rows="5"></textarea>
+    <button onclick="submitPost()">Send</button>
+    <button onclick="goHome()">Back</button>
+  </div>
 
-<div id="searchScreen" class="screen">
-  <h2>Search Message</h2>
-  <input id="searchKey" placeholder="Enter keyword"/>
-  <button onclick="searchMessage()">Search</button><br><br>
-  <div id="resultBox"></div>
-  <button onclick="showScreen('homeScreen')">Back</button>
-</div>
+  <div id="searchScreen">
+    <h2>Search Messages</h2>
+    <input type="text" id="searchInput" placeholder="Enter name" />
+    <button onclick="searchMessages()">Search</button>
+    <div id="searchResults"></div>
+    <button onclick="goHome()">Back</button>
+  </div>
 
-<div id="adminScreen" class="screen">
-  <h2>Admin Panel</h2>
-  <p>All messages:</p>
-  <div id="adminResults"></div>
-  <button onclick="showScreen('homeScreen')">Back</button>
-</div>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuM4PFCIYBSA75MEiQgxmky77ml5hIuOM",
+      authDomain: "the-unsent-chamber.firebaseapp.com",
+      databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
+      projectId: "the-unsent-chamber",
+      storageBucket: "the-unsent-chamber.firebasestorage.app",
+      messagingSenderId: "693365297092",
+      appId: "1:693365297092:web:0df5991809ef021a801e91",
+      measurementId: "G-HK5P4LB86C"
+    };
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDuM4PFCIYBSA75MEiQgxmky77ml5hIuOM",
-    authDomain: "the-unsent-chamber.firebaseapp.com",
-    databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
-    projectId: "the-unsent-chamber",
-    storageBucket: "the-unsent-chamber.firebasestorage.app",
-    messagingSenderId: "693365297092",
-    appId: "1:693365297092:web:0df5991809ef021a801e91",
-    measurementId: "G-HK5P4LB86C"
-  };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+    const CORRECT_PASSWORD = "unsent";
 
-  const unlock = () => {
-    const input = document.getElementById("accessInput").value;
-    if (input === "admin@321") {
-      showScreen("adminScreen");
-      fetchAllMessages();
-    } else if (input === "open@123") {
-      showScreen("homeScreen");
-      spawnFireflies();
-    } else {
-      alert("Wrong password!");
-    }
-  };
+    window.onload = () => {
+      document.getElementById("passwordScreen").style.display = "flex";
+    };
 
-  function showScreen(id) {
-    document.querySelectorAll(".screen").forEach(el => el.style.display = "none");
-    document.getElementById(id).style.display = "block";
-  }
-
-  function submitMessage() {
-    const msg = document.getElementById("messageInput").value;
-    const color = document.getElementById("colorPicker").value;
-    const key = document.getElementById("msgKey").value.toLowerCase();
-
-    if (!msg || !key) return alert("Fill all fields!");
-
-    set(ref(db, 'messages/' + key), {
-      text: msg,
-      color: color
-    }).then(() => {
-      confetti();
-      alert("Message sent!");
-      document.getElementById("messageInput").value = "";
-      document.getElementById("msgKey").value = "";
-    });
-  }
-
-  function searchMessage() {
-    const key = document.getElementById("searchKey").value.toLowerCase();
-    const result = document.getElementById("resultBox");
-
-    get(child(ref(db), 'messages/' + key)).then(snapshot => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        result.innerHTML = `<div class="msg-box" style="background:${data.color}">${data.text}</div>`;
+    function checkPassword() {
+      const entered = document.getElementById("passwordInput").value;
+      if (entered === CORRECT_PASSWORD) {
+        document.getElementById("passwordScreen").style.display = "none";
+        document.getElementById("homeScreen").style.display = "flex";
       } else {
-        result.innerHTML = "No message found.";
+        alert("Wrong password");
       }
-    });
-  }
-
-  function fetchAllMessages() {
-    const out = document.getElementById("adminResults");
-    get(child(ref(db), 'messages')).then(snapshot => {
-      if (snapshot.exists()) {
-        out.innerHTML = '';
-        const data = snapshot.val();
-        Object.keys(data).forEach(k => {
-          out.innerHTML += `<div style="background:${data[k].color}; margin:10px; padding:10px;">[${k}] → ${data[k].text}</div>`;
-        });
-      }
-    });
-  }
-
-  function getJoke() {
-    const jokes = [
-      "Why did the web developer go broke? Because he used up all his cache!",
-      "Why don’t skeletons fight each other? They don’t have the guts.",
-      "Parallel lines have so much in common. Too bad they'll never meet."
-    ];
-    document.getElementById("jokeDisplay").innerText = jokes[Math.floor(Math.random() * jokes.length)];
-  }
-
-  function confetti() {
-    const duration = 1 * 1000;
-    const end = Date.now() + duration;
-
-    (function frame() {
-      // Just a simple alert for visual cue. You can add a real confetti library here.
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    })();
-  }
-
-  function spawnFireflies() {
-    const container = document.getElementById("fireflyBg");
-    for (let i = 0; i < 30; i++) {
-      let dot = document.createElement("div");
-      dot.className = "firefly";
-      dot.style.top = Math.random() * 100 + "vh";
-      dot.style.left = Math.random() * 100 + "vw";
-      container.appendChild(dot);
     }
-  }
-</script>
 
+    function goHome() {
+      hideAllScreens();
+      document.getElementById("homeScreen").style.display = "flex";
+    }
+
+    function showPostScreen() {
+      hideAllScreens();
+      document.getElementById("postScreen").style.display = "flex";
+    }
+
+    function showSearchScreen() {
+      hideAllScreens();
+      document.getElementById("searchScreen").style.display = "flex";
+    }
+
+    function hideAllScreens() {
+      document.getElementById("homeScreen").style.display = "none";
+      document.getElementById("postScreen").style.display = "none";
+      document.getElementById("searchScreen").style.display = "none";
+    }
+
+    async function submitPost() {
+      const name = document.getElementById("postName").value.trim();
+      const msg = document.getElementById("postMessage").value.trim();
+      if (!name || !msg) return alert("Fill both fields");
+
+      const messageData = {
+        name: name.toLowerCase(),
+        message: msg,
+        timestamp: new Date().toISOString()
+      };
+
+      try {
+        await database.ref("unsentMessages").push(messageData);
+        alert("Message sent");
+        document.getElementById("postName").value = "";
+        document.getElementById("postMessage").value = "";
+        goHome();
+      } catch (error) {
+        console.error(error);
+        alert("Failed to send");
+      }
+    }
+
+    async function searchMessages() {
+      const search = document.getElementById("searchInput").value.trim().toLowerCase();
+      const results = document.getElementById("searchResults");
+      results.innerHTML = "";
+
+      try {
+        const snapshot = await database.ref("unsentMessages")
+          .orderByChild("name")
+          .equalTo(search)
+          .once("value");
+
+        if (!snapshot.exists()) {
+          results.innerHTML = "<p>No messages found.</p>";
+          return;
+        }
+
+        snapshot.forEach(child => {
+          const data = child.val();
+          const p = document.createElement("p");
+          p.textContent = data.message;
+          results.appendChild(p);
+        });
+      } catch (error) {
+        console.error(error);
+        alert("Search failed");
+      }
+    }
+  </script>
 </body>
 </html>
