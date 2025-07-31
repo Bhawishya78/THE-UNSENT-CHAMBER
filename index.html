@@ -1,223 +1,59 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>The Unsent Chamber</title>
+  <title>The Unsent Chamber - Lock Screen</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #000; color: #fff; overflow: hidden; }
-    .screen { display: none; height: 100vh; width: 100vw; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
-    .active { display: flex; }
-    input, button, select, textarea {
-      margin: 10px 0; padding: 10px; font-size: 1rem; border-radius: 5px; border: none;
+    body {
+      background-color: #000;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
     }
-    button { background: #0f0; color: #000; cursor: pointer; }
-    #fireflies { position: fixed; width: 100%; height: 100%; z-index: -1; }
-    .message { margin: 10px 0; padding: 10px; border-radius: 5px; background: #111; }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      background: #111;
+      color: #0f0;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #0f0;
+      color: #000;
+      border: none;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0a0;
+    }
   </style>
 </head>
 <body>
-
-<canvas id="fireflies"></canvas>
-
-<!-- LOCK SCREEN -->
-<div id="lockScreen" class="screen active">
-  <h2>Enter Password</h2>
-  <input type="password" id="lockPass" placeholder="Password..."/>
+  <h1>ðŸ”’ The Unsent Chamber</h1>
+  <input type="password" id="password" placeholder="Enter Password"/>
   <button onclick="unlock()">Unlock</button>
-</div>
-
-<!-- HOME -->
-<div id="homeScreen" class="screen">
-  <h1>Welcome to The Unsent Chamber</h1>
-  <p id="joke">Loading a fun joke...</p>
-  <button onclick="showScreen('postScreen')">Write a Message</button>
-  <button onclick="showScreen('searchScreen')">Search Messages</button>
-</div>
-
-<!-- POST -->
-<div id="postScreen" class="screen">
-  <h2>Write your unsent message</h2>
-  <input id="name" placeholder="Your name (optional)"/>
-  <input id="receiver" placeholder="To (optional)"/>
-  <textarea id="message" rows="5" placeholder="Your message"></textarea>
-  <select id="colorPicker">
-    <option value="#222">Default</option>
-    <option value="#f00">Red</option>
-    <option value="#0f0">Green</option>
-    <option value="#00f">Blue</option>
-    <option value="#ff0">Yellow</option>
-  </select>
-  <button onclick="sendMessage()">Send</button>
-  <button onclick="showScreen('homeScreen')">Back</button>
-</div>
-
-<!-- SEARCH -->
-<div id="searchScreen" class="screen">
-  <h2>Search Messages</h2>
-  <input id="searchQuery" placeholder="Enter keyword"/>
-  <button onclick="searchMessages()">Search</button>
-  <div id="results"></div>
-  <button onclick="showScreen('homeScreen')">Back</button>
-</div>
-
-<!-- ADMIN -->
-<div id="adminScreen" class="screen">
-  <h2>👑 Admin Panel</h2>
-  <div id="adminMessages"></div>
-  <button onclick="showScreen('homeScreen')">Exit</button>
-</div>
-
-<!-- FIREBASE + SCRIPT -->
-<script type="module">
-  // Fireflies
-  const canvas = document.getElementById('fireflies');
-  const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const flies = Array.from({ length: 100 }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    r: Math.random() * 2 + 1,
-    dx: Math.random() * 0.5 - 0.25,
-    dy: Math.random() * 0.5 - 0.25,
-  }));
-  function drawFlies() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let f of flies) {
-      ctx.beginPath();
-      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'lime';
-      ctx.fill();
-      f.x += f.dx; f.y += f.dy;
-      if (f.x < 0 || f.x > canvas.width) f.dx *= -1;
-      if (f.y < 0 || f.y > canvas.height) f.dy *= -1;
-    }
-    requestAnimationFrame(drawFlies);
-  }
-  drawFlies();
-
-  // Show screen
-  function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  }
-
-  // Unlock logic
-  function unlock() {
-    const pass = document.getElementById('lockPass').value;
-    if (pass === "openchamber") showScreen('homeScreen');
-    else if (pass === "theOneAboveAll") showScreen('adminScreen');
-    else alert("Incorrect password");
-  }
-
-  // Confetti
-  function confetti() {
-    for (let i = 0; i < 100; i++) {
-      const conf = document.createElement('div');
-      conf.textContent = '🎉';
-      conf.style.position = 'absolute';
-      conf.style.left = Math.random() * 100 + 'vw';
-      conf.style.top = '-5vh';
-      conf.style.animation = `fall 2s ease-in ${i * 10}ms forwards`;
-      document.body.appendChild(conf);
-      setTimeout(() => conf.remove(), 2500);
-    }
-  }
-
-  // Firebase
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getDatabase, ref, push, get, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-  const firebaseConfig = {
-    apiKey: "AIzaSyDuM4PFCIYBSA75MEiQgxmky77ml5hIuOM",
-    authDomain: "the-unsent-chamber.firebaseapp.com",
-    databaseURL: "https://the-unsent-chamber-default-rtdb.firebaseio.com",
-    projectId: "the-unsent-chamber",
-    storageBucket: "the-unsent-chamber.firebasestorage.app",
-    messagingSenderId: "693365297092",
-    appId: "1:693365297092:web:0df5991809ef021a801e91",
-    measurementId: "G-HK5P4LB86C"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase();
-
-  function sendMessage() {
-    const name = document.getElementById('name').value;
-    const receiver = document.getElementById('receiver').value;
-    const msg = document.getElementById('message').value;
-    const color = document.getElementById('colorPicker').value;
-    if (!msg) return alert("Message cannot be empty");
-
-    push(ref(db, "messages"), { name, receiver, msg, color, time: Date.now() });
-    confetti();
-    alert("Message sent!");
-    document.getElementById('name').value = "";
-    document.getElementById('receiver').value = "";
-    document.getElementById('message').value = "";
-  }
-
-  async function searchMessages() {
-    const query = document.getElementById('searchQuery').value.toLowerCase();
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = "Searching...";
-    const snapshot = await get(child(ref(db), "messages"));
-    if (!snapshot.exists()) return resultsDiv.innerHTML = "No messages found.";
-
-    const data = snapshot.val();
-    resultsDiv.innerHTML = "";
-    for (let key in data) {
-      const msg = data[key];
-      if (
-        msg.msg.toLowerCase().includes(query) ||
-        (msg.name && msg.name.toLowerCase().includes(query)) ||
-        (msg.receiver && msg.receiver.toLowerCase().includes(query))
-      ) {
-        const box = document.createElement("div");
-        box.className = "message";
-        box.style.background = msg.color || "#222";
-        box.innerHTML = `<b>${msg.name || "Someone"} ➤ ${msg.receiver || "?"}</b><br>${msg.msg}`;
-        resultsDiv.appendChild(box);
+  <script>
+    function unlock() {
+      const password = document.getElementById("password").value.trim();
+      if (password === "openchamber") {
+        window.location.href = "home.html";
+      } else if (password === "theOneAboveAll") {
+        window.location.href = "admin.html";
+      } else {
+        alert("ðŸš« Incorrect password. Try again.");
       }
     }
-  }
-
-  async function loadAdmin() {
-    const container = document.getElementById('adminMessages');
-    container.innerHTML = "Loading messages...";
-    const snapshot = await get(child(ref(db), "messages"));
-    if (!snapshot.exists()) return container.innerHTML = "No messages yet.";
-    const data = snapshot.val();
-    container.innerHTML = "";
-    for (let key in data) {
-      const msg = data[key];
-      const box = document.createElement("div");
-      box.className = "message";
-      box.style.background = msg.color || "#222";
-      box.innerHTML = `<b>${msg.name || "Anon"} ➤ ${msg.receiver || "?"}</b><br>${msg.msg}`;
-      container.appendChild(box);
-    }
-  }
-  window.onload = loadAdmin;
-
-  // Jokes
-  const jokes = [
-    "Why don’t skeletons fight each other? They don’t have the guts.",
-    "I'm reading a book about anti-gravity. It’s impossible to put down!",
-    "Parallel lines have so much in common. It’s a shame they’ll never meet.",
-    "I told my computer I needed a break... now it won’t stop sending me KitKats."
-  ];
-  document.getElementById('joke').innerText = jokes[Math.floor(Math.random() * jokes.length)];
-</script>
-
-<style>
-  @keyframes fall {
-    to {
-      transform: translateY(100vh);
-      opacity: 0;
-    }
-  }
-</style>
-
+  </script>
 </body>
 </html>
