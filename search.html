@@ -1,0 +1,19 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Search Messages</title>
+</head>
+<body style="background:black; color:white; text-align:center; font-family:sans-serif;">
+  <h1>Search Messages</h1>
+  <input type="text" id="query" placeholder="Enter a name or keyword"><br><br>
+  <button onclick="search()">Search</button>
+  <p id="result">No results yet.</p>
+  <script>
+    function search() {
+      document.getElementById("result").innerText = "This is a sample search result.";
+    }
+  </script>
+</body>
+</html>
