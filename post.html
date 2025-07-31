@@ -1,0 +1,22 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Post a Message</title>
+</head>
+<body style="background:black; color:white; text-align:center; font-family:sans-serif;">
+  <h1>Post a Message</h1>
+  <form onsubmit="submitMessage(event)">
+    <input type="text" id="name" placeholder="Your Name"><br><br>
+    <textarea id="message" placeholder="Your Message"></textarea><br><br>
+    <button type="submit">Send</button>
+  </form>
+  <script>
+    function submitMessage(event) {
+      event.preventDefault();
+      alert("Message Sent! ðŸŽ‰");
+    }
+  </script>
+</body>
+</html>
